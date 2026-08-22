@@ -1,3 +1,4 @@
+import os
 import cv2
 from deoldify import DEOLDIFY
 from argparse import ArgumentParser
@@ -6,6 +7,7 @@ from argparse import ArgumentParser
 def main():
     parser = ArgumentParser()
     parser.add_argument("--source", required=True, help="path to source image")
+    parser.add_argument("--result", help="path to result image, default: source name + _colorized")
     parser.add_argument("--model", default='models/ColorizeArtistic_dyn_fp16.onnx', help="path to onnx model")
     parser.add_argument("--device", default='cuda', help="cuda or cpu")
     parser.add_argument("--render_factor", type=int, default=32, help=" - ")
@@ -19,7 +21,12 @@ def main():
 
     colorized = colorizer.colorize(image, render_factor)
 
-    # cv2.imwrite(opt.result_image, colorized)
+    result = opt.result
+    if result is None:
+        name, ext = os.path.splitext(opt.source)
+        result = name + "_colorized" + ext
+    cv2.imwrite(result, colorized)
+
     cv2.imshow("Colorized image saved - press any key", colorized)
     cv2.waitKey()
 
