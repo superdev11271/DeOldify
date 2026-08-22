@@ -11,12 +11,12 @@ import onnxruntime as rt
 rt.set_default_logger_severity(3)
 
 # old model - you cannot set render_factor
-#from color.deoldify_fp16 import DEOLDIFY
+#from deoldify import DEOLDIFY
 #colorizer = DEOLDIFY(model_path="models/deoldify_fp16.onnx", device="cpu")
-#from color.deoldify import DEOLDIFY
+#from deoldify import DEOLDIFY
 #colorizer = DEOLDIFY(model_path="models/deoldify.onnx", device="cuda")
 
-from color.deoldify import DEOLDIFY
+from deoldify import DEOLDIFY
 colorizer = DEOLDIFY(model_path="models/ColorizeArtistic_dyn.onnx", device="cuda")
 
 

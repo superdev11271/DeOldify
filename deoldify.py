@@ -12,6 +12,8 @@ class DEOLDIFY:
             providers = [("CUDAExecutionProvider", {"cudnn_conv_algo_search": "DEFAULT"}),"CPUExecutionProvider"]
         self.session = onnxruntime.InferenceSession(model_path, sess_options=session_options, providers=providers)
         self.resolution = self.session.get_inputs()[0].shape[-2:]
+        # detect fp16 vs fp32 from the model's input type
+        self.dtype = np.float16 if self.session.get_inputs()[0].type == "tensor(float16)" else np.float32
 
         
     def colorize(self, image, r_factor):
@@ -26,15 +28,15 @@ class DEOLDIFY:
         h, w, channels = image.shape
 
         image = cv2.resize(image,(r_factor, r_factor))
-        image = image.astype(np.float32)  
+        image = image.astype(self.dtype)
         image = image.transpose((2, 0, 1))
-        image = np.expand_dims(image, axis=0).astype(np.float32)
+        image = np.expand_dims(image, axis=0).astype(self.dtype)
 
         # run deoldify:
         colorized = self.session.run(None, {(self.session.get_inputs()[0].name):image})[0][0]
 
         # postprocess image:
-        colorized = colorized.transpose(1,2,0)
+        colorized = colorized.transpose(1,2,0).astype(np.float32)
         colorized = cv2.cvtColor(colorized, cv2.COLOR_BGR2RGB).astype(np.uint8)
         colorized = cv2.resize(colorized,(w,h))
         colorized = cv2.GaussianBlur(colorized,(13,13),0)
@@ -45,4 +47,3 @@ class DEOLDIFY:
         colorized = cv2.cvtColor(colorized,cv2.COLOR_LAB2BGR)
                       
         return colorized
-

@@ -33,15 +33,15 @@ render_factor = opt.render_factor * 32
 #
 
 # old model - you cannot set render_factor
-#from color.deoldify_fp16 import DEOLDIFY
+#from deoldify import DEOLDIFY
 #colorizer = DEOLDIFY(model_path="models/deoldify_fp16.onnx", device="cpu")
-#from color.deoldify import DEOLDIFY
+#from deoldify import DEOLDIFY
 #colorizer = DEOLDIFY(model_path="models/deoldify.onnx", device="cuda")
 
 # new onnx models - render_factor - dynamic axes input:
-from color.deoldify_fp16 import DEOLDIFY
+from deoldify import DEOLDIFY
 colorizer = DEOLDIFY(model_path="models/ColorizeArtistic_dyn_fp16.onnx", device="cuda")
-#from color.deoldify import DEOLDIFY
+#from deoldify import DEOLDIFY
 #colorizer = DEOLDIFY(model_path="models/ColorizeArtistic_dyn.onnx", device="cuda")
 
 
