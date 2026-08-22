@@ -1,0 +1,5 @@
+opencv-python
+numpy
+tqdm
+onnxruntime==1.14.1
+

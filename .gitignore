@@ -1,0 +1,5 @@
+*.onnx
+*.png
+*.jpg
+*.jpeg
+*.pth
