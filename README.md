@@ -19,10 +19,10 @@ Added floating point 16 model for 100% faster inference and simple GUI version.
 For inference run:
 
 Image:
-python image.py --source_image "image.jpg"
+python infer_image.py --source "image.jpg"
 
 Video:
-python video.py --source "video.mp4" --result "video_colorized.mp4" --audio
+python infer_video.py --source "video.mp4" --result "video_colorized.mp4" --audio
 
 Image example:
 ![colorizer1](https://github.com/instant-high/deoldify-onnx/assets/77229558/171642dd-9034-4ca7-8d29-c07c6e5e9f0a)
