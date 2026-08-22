@@ -2,6 +2,8 @@ import cv2
 import numpy as np
 import onnxruntime
 
+onnxruntime.set_default_logger_severity(3)
+
 
 class DEOLDIFY:
     def __init__(self, model_path="deoldify.onnx", device='cpu'):
