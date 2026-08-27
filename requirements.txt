@@ -3,3 +3,4 @@ numpy
 tqdm
 onnxruntime==1.14.1
 
+gradio
