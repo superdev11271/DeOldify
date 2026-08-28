@@ -16,32 +16,46 @@ class DEOLDIFY:
         if device == 'cuda':
             providers = [("CUDAExecutionProvider", {"cudnn_conv_algo_search": "DEFAULT"}),"CPUExecutionProvider"]
         self.session = onnxruntime.InferenceSession(model_path, sess_options=session_options, providers=providers)
-        self.resolution = self.session.get_inputs()[0].shape[-2:]
+        model_input = self.session.get_inputs()[0]
+        self.input_name = model_input.name
+        self.resolution = model_input.shape[-2:]
         # detect fp16 vs fp32 from the model's input type
-        self.dtype = np.float16 if self.session.get_inputs()[0].type == "tensor(float16)" else np.float32
+        self.dtype = np.float16 if model_input.type == "tensor(float16)" else np.float32
+        # the batch axis is symbolic only when exported with --dynamic, otherwise it is pinned to 1
+        self.dynamic_batch = not isinstance(model_input.shape[0], int)
 
-        
+
     def colorize(self, image, r_factor):
-    
-        # preprocess image:
-        targetL = cv2.cvtColor(image,cv2.COLOR_BGR2LAB)
-        targetL,_,_=cv2.split(image)
+        return self.colorize_batch([image], r_factor)[0]
 
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
-        
-        h, w, channels = image.shape
 
+    def colorize_batch(self, images, r_factor):
         resolution = r_factor * RENDER_BASE
-        image = cv2.resize(image,(resolution, resolution))
-        image = image.astype(self.dtype)
-        image = image.transpose((2, 0, 1))
-        image = np.expand_dims(image, axis=0).astype(self.dtype)
+        batch = np.stack([self._preprocess(image, resolution) for image in images])
 
         # run deoldify:
-        colorized = self.session.run(None, {(self.session.get_inputs()[0].name):image})[0][0]
+        if self.dynamic_batch:
+            colorized = self.session.run(None, {self.input_name: batch})[0]
+        else:
+            # model has a fixed batch of 1, so feed the images one at a time
+            colorized = np.concatenate(
+                [self.session.run(None, {self.input_name: batch[i:i + 1]})[0] for i in range(len(batch))]
+            )
 
-        # postprocess image:
+        return [self._postprocess(c, image) for c, image in zip(colorized, images)]
+
+
+    def _preprocess(self, image, resolution):
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
+        image = cv2.resize(image,(resolution, resolution))
+        return image.transpose((2, 0, 1)).astype(self.dtype)
+
+
+    def _postprocess(self, colorized, source):
+        targetL,_,_ = cv2.split(source)
+        h, w, channels = source.shape
+
         colorized = colorized.transpose(1,2,0).astype(np.float32)
         colorized = cv2.cvtColor(colorized, cv2.COLOR_BGR2RGB).astype(np.uint8)
         colorized = cv2.resize(colorized,(w,h))
@@ -51,5 +65,5 @@ class DEOLDIFY:
         colorizedLAB = cv2.resize(colorizedLAB,(w, h))
         colorized = cv2.merge((targetL,A,B))
         colorized = cv2.cvtColor(colorized,cv2.COLOR_LAB2BGR)
-                      
+
         return colorized
