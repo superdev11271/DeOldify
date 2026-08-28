@@ -4,6 +4,9 @@ import onnxruntime
 
 onnxruntime.set_default_logger_severity(3)
 
+# inference resolution is render_factor * RENDER_BASE
+RENDER_BASE = 16
+
 
 class DEOLDIFY:
     def __init__(self, model_path="deoldify.onnx", device='cpu'):
@@ -29,7 +32,8 @@ class DEOLDIFY:
         
         h, w, channels = image.shape
 
-        image = cv2.resize(image,(r_factor, r_factor))
+        resolution = r_factor * RENDER_BASE
+        image = cv2.resize(image,(resolution, resolution))
         image = image.astype(self.dtype)
         image = image.transpose((2, 0, 1))
         image = np.expand_dims(image, axis=0).astype(self.dtype)
