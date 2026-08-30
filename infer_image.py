@@ -1,6 +1,6 @@
 import os
 import cv2
-from deoldify import DEOLDIFY
+from deoldify_onnx import DEOLDIFY
 from argparse import ArgumentParser
 
 
@@ -10,16 +10,14 @@ def main():
     parser.add_argument("--result", help="path to result image, default: source name + _colorized")
     parser.add_argument("--model", default='models/ColorizeArtistic_dyn_fp16.onnx', help="path to onnx model")
     parser.add_argument("--device", default='cuda', help="cuda or cpu")
-    parser.add_argument("--render_factor", type=int, default=32, help=" - ")
+    parser.add_argument("--render_factor", type=int, default=35, help=" - ")
     opt = parser.parse_args()
-
-    render_factor = opt.render_factor * 16
 
     colorizer = DEOLDIFY(model_path=opt.model, device=opt.device)
 
     image = cv2.imread(opt.source)
 
-    colorized = colorizer.colorize(image, render_factor)
+    colorized = colorizer.colorize(image, opt.render_factor)
 
     result = opt.result
     if result is None:

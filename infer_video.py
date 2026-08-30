@@ -3,7 +3,7 @@ import cv2
 import subprocess
 import platform
 
-from deoldify import DEOLDIFY
+from deoldify_onnx import DEOLDIFY
 from argparse import ArgumentParser
 from tqdm import tqdm
 
@@ -17,8 +17,6 @@ def main():
     parser.add_argument("--device", default='cuda', help="cuda or cpu")
     parser.add_argument("--render_factor", type=int, default=32, help=" - ")
     opt = parser.parse_args()
-
-    render_factor = opt.render_factor * 16
 
     colorizer = DEOLDIFY(model_path=opt.model, device=opt.device)
 
@@ -45,7 +43,7 @@ def main():
         if not ret:
             break
 
-        result = colorizer.colorize(frame, render_factor)
+        result = colorizer.colorize(frame, opt.render_factor)
 
         writer.write(result)
         cv2.imshow ("Result",result)

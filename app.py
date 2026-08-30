@@ -8,7 +8,7 @@ import subprocess
 import cv2
 import gradio as gr
 
-from deoldify import DEOLDIFY
+from deoldify_onnx import DEOLDIFY
 
 DEFAULT_MODEL = 'models/ColorizeArtistic_dyn_fp16.onnx'
 
@@ -47,7 +47,7 @@ def colorize_image(image, model, device, render_factor):
     image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
     start = time.perf_counter()
-    colorized = colorizer.colorize(image, render_factor * 16)
+    colorized = colorizer.colorize(image, render_factor)
     elapsed = time.perf_counter() - start
 
     return cv2.cvtColor(colorized, cv2.COLOR_BGR2RGB), "%.2f s" % elapsed
@@ -74,7 +74,7 @@ def colorize_video(source, model, device, render_factor, progress=gr.Progress())
         ret, frame = video.read()
         if not ret:
             break
-        writer.write(colorizer.colorize(frame, render_factor * 16))
+        writer.write(colorizer.colorize(frame, render_factor))
         done = done + 1
     elapsed = time.perf_counter() - start
 
