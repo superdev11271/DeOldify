@@ -1,0 +1,11 @@
+__pycache__
+*.onnx
+*.png
+*.jpg
+*.jpeg
+*.pth
+*.mp4
+*.api
+venv
+*.tar
+*.tar.gz
