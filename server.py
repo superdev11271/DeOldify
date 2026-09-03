@@ -2,7 +2,7 @@
 
 Start with a model name and a device; the models always live in `MODEL_DIR`:
 
-    python server.py --model ColorizeArtistic_dyn.onnx --device cuda
+    python server.py --model ColorizeArtistic_dyn_fp16.onnx --device cuda
 
 POST an image (multipart field `image`) and get the colorized image back as
 PNG. Images whose longest side exceeds `--max_side` are downscaled for
@@ -21,9 +21,9 @@ from fastapi.responses import Response
 from deoldify_onnx import DEOLDIFY
 
 MODEL_DIR = 'models'
-DEFAULT_MODEL = 'ColorizeArtistic_dyn.onnx'
+DEFAULT_MODEL = 'ColorizeArtistic_dyn_fp16.onnx'
 DEFAULT_DEVICE = 'cuda'
-DEFAULT_MAX_SIDE = 1920
+DEFAULT_MAX_SIDE = 1280
 DEFAULT_RENDER_FACTOR = 35
 
 app = FastAPI(title='DeOldify ONNX')

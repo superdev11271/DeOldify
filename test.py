@@ -44,6 +44,7 @@ def timed(method, url, **kwargs):
 def run(args, source):
     """Run the three checks against the server and return them as a list of bools."""
     results = []
+    form = {'render_factor': args.render_factor}
 
     response, seconds = timed('GET', args.url + HEALTH_ROUTE)
     body = response.json() if response.headers.get('content-type', '').startswith('application/json') else {}
@@ -53,8 +54,7 @@ def run(args, source):
     with open(args.image, 'rb') as handle:
         response, seconds = timed(
             'POST', args.url + ROUTE,
-            files={'image': (os.path.basename(args.image), handle, 'image/png')},
-            data={'render_factor': args.render_factor})
+            files={'image': (os.path.basename(args.image), handle, 'image/png')}, data=form)
     is_png = response.status_code == 200 and response.headers.get('content-type') == 'image/png'
     output = cv2.imdecode(np.frombuffer(response.content, np.uint8), cv2.IMREAD_COLOR) if is_png else None
     results.append(check('colorize', output is not None, seconds,
@@ -66,8 +66,7 @@ def run(args, source):
 
     response, seconds = timed(
         'POST', args.url + ROUTE,
-        files={'image': ('not_an_image.png', b'not an image', 'image/png')},
-        data={'render_factor': args.render_factor})
+        files={'image': ('not_an_image.png', b'not an image', 'image/png')}, data=form)
     results.append(check('rejects a non-image', response.status_code == 400, seconds,
                          f'{response.status_code} {response.text[:80]}'))
 

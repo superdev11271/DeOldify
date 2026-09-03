@@ -29,7 +29,7 @@ start the server with `--device cpu`.
 import cv2
 from deoldify_onnx import DEOLDIFY
 
-colorizer = DEOLDIFY('models/ColorizeArtistic_dyn.onnx', device='cuda')
+colorizer = DEOLDIFY('models/ColorizeArtistic_dyn_fp16.onnx', device='cuda')
 output = colorizer.colorize(cv2.imread('input.png'), 35)     # BGR uint8 in, BGR uint8 out
 outputs = colorizer.colorize_batch([img1, img2], 35)         # needs a model exported with --dynamic
 ```
@@ -44,20 +44,20 @@ outputs = colorizer.colorize_batch([img1, img2], 35)         # needs a model exp
 
 ```bash
 python server.py
-python server.py -m ColorizeStable_dyn_fp16.onnx -d cpu -p 9000
+python server.py -m ColorizeArtistic_dyn.onnx -d cpu -p 9000
 ```
 
 | Flag | Default | Meaning |
 | --- | --- | --- |
-| `-m`, `--model` | `ColorizeArtistic_dyn.onnx` | Colorization model file name |
+| `-m`, `--model` | `ColorizeArtistic_dyn_fp16.onnx` | Colorization model file name |
 | `-d`, `--device` | `cuda` | `cuda` or `cpu` |
-| `--max_side` | `1920` | Images with a longer side than this are downscaled before inference |
+| `--max_side` | `1280` | Images with a longer side than this are downscaled before inference |
 | `--host` | `0.0.0.0` | Bind address |
 | `-p`, `--port` | `8080` | Bind port |
 
 The model directory is always `models/`, so `--model` take a file name, not a path.
-The model is loaded once at startup and a missing file fails immediately, so startup
-takes a few seconds and the port only opens once the session is ready.
+Models load once at startup and a missing file fails immediately, so startup takes
+a few seconds and the port only opens once every session is ready.
 
 An upload whose longer side exceeds `--max_side` is downscaled to that limit (aspect
 ratio kept), colorized, then resized back to its **original** dimensions, so oversized images
@@ -74,12 +74,12 @@ curl http://127.0.0.1:8080/api/health
 ```
 
 ```json
-{"status": "ok", "model": "ColorizeArtistic_dyn.onnx", "device": "cuda", "max_side": 1920,
+{"status": "ok", "model": "ColorizeArtistic_dyn_fp16.onnx", "device": "cuda", "max_side": 1280,
  "providers": ["CUDAExecutionProvider", "CPUExecutionProvider"]}
 ```
 
 `providers` comes from the live session, so it shows whether CUDA actually engaged or
-fell back to CPU. `503` if the model is not loaded.
+fell back to CPU. `503` before loading has finished.
 
 ### `POST /api/colorize`
 
@@ -101,7 +101,7 @@ curl -X POST -F "image=@test/test.png" http://127.0.0.1:8080/api/colorize -o tes
 ## Docker
 
 Base image `nvidia/cuda:12.6.3-cudnn-runtime-ubuntu24.04`, so run it with `--gpus all`.
-`models/` is not baked into the image (~2.4 GB of onnx) -- mount it at run time.
+`models/` is not baked into the image (~370 MB of onnx) -- mount it at run time.
 
 ```bash
 docker build -t deoldify-server .
@@ -111,7 +111,7 @@ docker run --gpus all -p 8080:8080 -v ./models:/app/models deoldify-server
 Server flags pass straight through the entrypoint:
 
 ```bash
-docker run --gpus all -p 8080:8080 -v ./models:/app/models deoldify-server -m ColorizeStable_dyn_fp16.onnx --max_side 1280
+docker run --gpus all -p 8080:8080 -v ./models:/app/models deoldify-server -m ColorizeArtistic_dyn.onnx --max_side 1920
 ```
 
 Omit `--gpus all` and pass `-d cpu` to run on CPU. On Windows use an absolute path for
@@ -142,10 +142,10 @@ python test.py test/test.png
 ```
 
 ```
-[PASS] health -- 6ms -- {'status': 'ok', 'model': 'ColorizeArtistic_dyn.onnx', ...}
-[PASS] colorize -- 8112ms -- (763, 596, 3) -> (763, 596, 3)
+[PASS] health -- 5ms -- {'status': 'ok', 'model': 'ColorizeArtistic_dyn_fp16.onnx', ...}
+[PASS] colorize -- 6057ms -- (763, 596, 3) -> (763, 596, 3)
        wrote test/test_out.png
-[PASS] rejects a non-image -- 3ms -- 400 {"detail":"could not decode image"}
+[PASS] rejects a non-image -- 5ms -- 400 {"detail":"could not decode image"}
 3/3 checks passed
 ```
 
@@ -183,9 +183,8 @@ curl -s -o /dev/null -w '%{http_code}\n' -X POST -F "image=@README.md" http://12
 
 ## Notes
 
-- One ONNX session is created at startup and shared. FastAPI runs the endpoint in a
+- ONNX sessions are created at startup and shared. FastAPI runs the endpoint in a
   threadpool, so concurrent requests are correct but throughput is bounded by the
-  single session.
-- The `_fp16` graphs are selected by name, e.g. `--model ColorizeStable_dyn_fp16.onnx`.
-- `models/ColorizeStable_gen.pth` is the original torch checkpoint the ONNX graph was
-  exported from. It is unused at inference time and excluded from the Docker image.
+  session a request runs on.
+- The default is the fp16 graph. The fp32 one is selected by name:
+  `--model ColorizeArtistic_dyn.onnx`.
